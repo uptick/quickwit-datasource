@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.4
+
+### What's Changed
+
+- Enable `extended_stats` and `cardinality` metric aggregations
+- Expose alias pattern input in the query editor for custom series naming
+- Fix ad hoc filter precedence by parenthesizing Lucene filters to preserve `AND`
+- Pin GitHub Actions to commit SHAs with ratchet
+
 ## 0.6.1
 
 ### What's Changed
