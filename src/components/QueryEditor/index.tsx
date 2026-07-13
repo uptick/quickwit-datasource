@@ -5,7 +5,7 @@ import React, { createContext, useEffect, useRef } from 'react';
 import { useEventListener } from 'usehooks-ts'
 
 import { CoreApp, Field, getDefaultTimeRange, GrafanaTheme2, QueryEditorProps } from '@grafana/data';
-import { InlineLabel, useStyles2 } from '@grafana/ui';
+import { InlineLabel, Input, useStyles2 } from '@grafana/ui';
 
 import { ElasticDatasource } from '@/datasource';
 import { useNextId } from '@/hooks/useNextId';
@@ -16,7 +16,7 @@ import { BucketAggregationsEditor } from './BucketAggregationsEditor';
 import { ElasticsearchProvider, useDatasource, useRange } from './ElasticsearchQueryContext';
 import { MetricAggregationsEditor } from './MetricAggregationsEditor';
 import { metricAggregationConfig } from './MetricAggregationsEditor/utils';
-import { changeQuery } from './state';
+import { changeQuery, changeAliasPattern } from './state';
 import { QuickwitOptions } from '../../quickwit';
 import { QueryTypeSelector } from './QueryTypeSelector';
 
@@ -119,6 +119,10 @@ const QueryEditorForm = ({ value, onRunQuery }: Props) => {
     onChange(query)
     onRunQuery()
   }
+  const onAliasChange = (alias: string) => {
+    dispatch(changeAliasPattern(alias))
+    onRunQuery()
+  }
 
   return (
     <div ref={editorRef}>
@@ -139,6 +143,31 @@ const QueryEditorForm = ({ value, onRunQuery }: Props) => {
 
       <MetricAggregationsEditor nextId={nextId} />
       {showBucketAggregationsEditor && <BucketAggregationsEditor nextId={nextId} />}
+      {showBucketAggregationsEditor && (
+        <div className={styles.root}>
+          <InlineLabel
+            width={17}
+            tooltip={
+              <>
+                Series name override. Templating available with {'{{metric}}'} (e.g. Count),{' '}
+                {'{{field}}'}, {'{{term <name>}}'} for a group-by term value, and{' '}
+                {'{{<label>}}'} for any label. Useful to differentiate series when multiple queries
+                return the same metric.
+              </>
+            }
+          >
+            Alias
+          </InlineLabel>
+          <div className={styles.queryItem}>
+            <Input
+              aria-label="Alias pattern"
+              placeholder="Alias pattern (e.g. {{term service_name}} {{metric}})"
+              defaultValue={value.alias}
+              onBlur={(e) => onAliasChange(e.currentTarget.value)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
