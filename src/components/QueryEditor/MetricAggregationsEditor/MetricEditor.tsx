@@ -32,7 +32,18 @@ interface Props {
   value: MetricAggregation;
 }
 
-const QUICKWIT_SUPPORTED_METRICS = ['count', 'avg', 'sum', 'min', 'max', 'percentiles', 'raw_data', 'logs'];
+const QUICKWIT_SUPPORTED_METRICS = [
+  'count',
+  'avg',
+  'sum',
+  'min',
+  'max',
+  'extended_stats',
+  'percentiles',
+  'cardinality',
+  'raw_data',
+  'logs',
+];
 
 const getTypeOptions = (
   _: MetricAggregation[],

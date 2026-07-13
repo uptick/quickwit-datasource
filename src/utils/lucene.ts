@@ -150,7 +150,14 @@ export function concatenate(query: string, filter: string, operator?: 'AND'|'OR'
     return filter;
   }
 
-  return operator ? `${query} ${operator} ${filter}` : `${query} ${filter}`
+  // Quickwit's query language uses AND as the default operator, so a space
+  // between clauses already means AND. Injecting a bare `${query} AND ${filter}`
+  // mixes implicit conjunction with an explicit boolean operator, and Tantivy
+  // binds the explicit AND only to its two adjacent clauses — leaving the
+  // leading space-separated terms non-mandatory (they stop being required, so
+  // unrelated docs match). Parenthesizing both sides keeps the explicit-AND
+  // intent of #175 while preserving correct precedence.
+  return operator ? `(${query}) ${operator} (${filter})` : `${query} ${filter}`
 }
 
 export class LuceneQuery {
