@@ -487,7 +487,15 @@ func TestTraceDataLinks(t *testing.T) {
 		traceIDField, _ := result.Responses["A"].Frames[0].FieldByName("traceID")
 		require.NotNil(t, traceIDField)
 		require.NotNil(t, traceIDField.Config)
-		require.Len(t, traceIDField.Config.Links, 1)
+		require.Len(t, traceIDField.Config.Links, 3)
+
+		peekTrace := traceIDField.Config.Links[1]
+		require.Equal(t, "Peek trace", peekTrace.Title)
+		require.Equal(t, "/a/quickwit-quickwit-app/explorer?ds=traces-uid&${__url_time_range}&peek=${__value.raw}", peekTrace.URL)
+
+		peekLogs := traceIDField.Config.Links[2]
+		require.Equal(t, "Peek logs", peekLogs.Title)
+		require.Equal(t, "/a/quickwit-quickwit-app/explorer?ds=traces-uid&${__url_time_range}&peek=${__value.raw}&peekTab=logs", peekLogs.URL)
 
 		link := traceIDField.Config.Links[0]
 		require.Equal(t, "Open trace", link.Title)

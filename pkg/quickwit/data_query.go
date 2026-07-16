@@ -537,7 +537,13 @@ func processTracesQuery(q *Query, b *es.SearchRequestBuilder, defaultTimeField s
 
 func processTraceSearchQuery(q *Query, b *es.SearchRequestBuilder, defaultTimeField string) {
 	metric := q.Metrics[0]
-	b.Sort(es.SortOrderDesc, defaultTimeField, "epoch_nanos_int")
+	if metric.Settings.Get("sort").MustString() == "duration" {
+		// Scan the slowest spans of the whole window (sort_by=-span_duration_millis)
+		// so "slowest" is not limited to the most recent spans.
+		b.Sort(es.SortOrderDesc, "span_duration_millis", "")
+	} else {
+		b.Sort(es.SortOrderDesc, defaultTimeField, "epoch_nanos_int")
+	}
 	b.Size(stringToIntWithDefaultValue(metric.Settings.Get("spanLimit").MustString(), 5000))
 }
 

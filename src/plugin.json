@@ -1,23 +1,15 @@
 {
   "$schema": "https://raw.githubusercontent.com/grafana/grafana/master/docs/sources/developers/plugins/plugin.schema.json",
-  "type": "datasource",
+  "type": "app",
   "name": "Quickwit",
-  "id": "quickwit-quickwit-datasource",
-  "metrics": true,
-  "backend": true,
-  "alerting": true,
-  "annotations": true,
-  "logs": true,
-  "tracing": true,
-  "executable": "gpx_quickwit",
-  "category": "logging",
+  "id": "quickwit-quickwit-app",
   "info": {
-    "description": "Quickwit is an OSS, Cloud-Native search engine on object storage. This plugin allows you to visualize logs, traces, and build dashboards on top of Quickwit.",
+    "description": "Quickwit for Grafana: datasource for logs, traces and metrics, plus a trace explorer app.",
     "author": {
       "name": "Quickwit",
       "url": "https://quickwit.io"
     },
-    "keywords": ["datasource", "logs", "traces", "log management", "log observability", "log analytics", "quickwit"],
+    "keywords": ["app", "datasource", "quickwit", "logs", "traces", "log management", "observability"],
     "logos": {
       "small": "img/logo.svg",
       "large": "img/logo.svg"
@@ -36,29 +28,35 @@
         "url": "https://quickwit.io"
       }
     ],
-    "screenshots": [
-      {
-        "name": "Log Explorer",
-        "path": "img/screenshot-explorer-view.png"
-      },
-      {
-        "name": "Log Explorer with query",
-        "path": "img/screenshot-explorer-view-with-query.png"
-      },
-      {
-        "name": "Log Explorer with raw query",
-        "path": "img/screenshot-explorer-view-with-raw-query.png"
-      },
-      {
-        "name": "Dashboard",
-        "path": "img/screenshot-dashboard-view.png"
-      }
-    ],
+    "screenshots": [],
     "version": "%VERSION%",
     "updated": "%TODAY%"
   },
+  "includes": [
+    {
+      "type": "page",
+      "name": "Span explorer",
+      "path": "/a/%PLUGIN_ID%/explorer",
+      "addToNav": true,
+      "defaultNav": true
+    },
+    {
+      "type": "page",
+      "name": "Breakdown",
+      "path": "/a/%PLUGIN_ID%/explorer/breakdown",
+      "addToNav": true,
+      "defaultNav": false
+    },
+    {
+      "type": "page",
+      "name": "Trace viewer",
+      "path": "/a/%PLUGIN_ID%/explorer/trace",
+      "addToNav": true,
+      "defaultNav": false
+    }
+  ],
   "dependencies": {
-    "grafanaDependency": ">=12",
+    "grafanaDependency": ">=12.3.0",
     "plugins": []
   }
 }

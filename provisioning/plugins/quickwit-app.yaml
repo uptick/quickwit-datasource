@@ -1,0 +1,9 @@
+apiVersion: 1
+
+apps:
+  - type: 'quickwit-quickwit-app'
+    org_id: 1
+    disabled: false
+    jsonData:
+      tracesDatasourceUid: quickwit-traces
+      logsDatasourceUid: quickwit-logs

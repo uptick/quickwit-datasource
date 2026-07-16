@@ -17,11 +17,11 @@ services:
         grafana_version: ${GRAFANA_VERSION:-13.0.2}
         grafana_image: ${GRAFANA_IMAGE:-grafana-oss}
     environment:
-      - GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=quickwit-quickwit-datasource
+      - GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=quickwit-quickwit-app,quickwit-quickwit-datasource
     ports:
       - 3000:3000/tcp
     volumes:
-      - ./:/var/lib/grafana/plugins/grafana-quickwit-datasource
+      - ./dist:/var/lib/grafana/plugins/quickwit-quickwit-app
       - ./provisioning:/etc/grafana/provisioning
       - gquickwit:/var/lib/grafana
     extra_hosts:
