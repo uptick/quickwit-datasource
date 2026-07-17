@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/uptick/quickwit-datasource/compare/v0.6.5...v0.7.0) (2026-07-17)
+
+
+### Features
+
+* new release ([ab7f63d](https://github.com/uptick/quickwit-datasource/commit/ab7f63df0e13f4a5d6ec4de0403c5ee6170a5224))
+
 ## 0.6.4
 
 ### What's Changed
