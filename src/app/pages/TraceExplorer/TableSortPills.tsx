@@ -5,7 +5,7 @@ import {
   SceneObjectUrlSyncConfig,
   SceneObjectUrlValues,
 } from '@grafana/scenes';
-import { FilterPill } from '@grafana/ui';
+import { FilterPill, Tooltip } from '@grafana/ui';
 import { TraceSearchSort } from './queries';
 
 export interface TableSortState extends SceneObjectState {
@@ -49,11 +49,10 @@ export class TableSort extends SceneObjectBase<TableSortState> {
 function TableSortRenderer({ model }: { model: TableSort }) {
   const { sort } = model.useState();
   return (
-    <FilterPill
-      label="Slowest"
-      selected={sort === 'slowest'}
-      onClick={model.onToggle}
-      title="Order traces by duration (server-side); off = most recent first"
-    />
+    <Tooltip content="Order traces by duration (server-side); off = most recent first">
+      <span>
+        <FilterPill label="Slowest" selected={sort === 'slowest'} onClick={model.onToggle} />
+      </span>
+    </Tooltip>
   );
 }
