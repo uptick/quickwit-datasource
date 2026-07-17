@@ -11,9 +11,10 @@ import {
   SceneQueryRunner,
   VizPanel,
 } from '@grafana/scenes';
-import { Drawer, LinkButton, Tab, TabsBar, Tag, useStyles2 } from '@grafana/ui';
+import { Drawer, LinkButton, Tab, TabsBar, useStyles2 } from '@grafana/ui';
 import { PLUGIN_BASE_URL, ROUTES } from '../../constants';
 import { getLogsDatasource, getTracesDatasource } from '../../utils/utils.datasource';
+import { LogsFilter, LogsFilterControls } from './SpanFilter';
 import { SpanLogsLink } from './SpanLogsLink';
 import { traceLogsQuery, traceLookupQuery } from './queries';
 
@@ -22,8 +23,8 @@ type PeekTab = 'waterfall' | 'logs';
 export interface TracePeekDrawerState extends SceneObjectState {
   traceId: string;
   activeTab: PeekTab;
-  /** Restricts the logs tab to one span (set via the waterfall's log icons). */
-  spanId: string;
+  /** Span restriction (waterfall log icons) and free-text search for the logs tab. */
+  logsFilter: LogsFilter;
   waterfall: SpanLogsLink;
   logsPanel: VizPanel;
 }
@@ -39,6 +40,8 @@ export class TracePeekDrawer extends SceneObjectBase<TracePeekDrawerState> {
 
   private _traceRunner: SceneQueryRunner;
   private _logsRunner: SceneQueryRunner;
+  /** Suppresses the filter subscription while setTraceId resets the filters itself. */
+  private _resettingFilter = false;
 
   protected _urlSync = new SceneObjectUrlSyncConfig(this, { keys: ['peek', 'peekTab'] });
 
@@ -55,6 +58,8 @@ export class TracePeekDrawer extends SceneObjectBase<TracePeekDrawerState> {
     const waterfallPanel = PanelBuilders.traces().setTitle('Waterfall').setData(traceRunner).build();
     const waterfall = new SpanLogsLink({ panel: waterfallPanel });
 
+    const logsFilter = new LogsFilter({ spanId: '', text: '' });
+
     const logsPanel = PanelBuilders.logs()
       .setTitle('Trace logs')
       .setData(logsRunner)
@@ -63,11 +68,23 @@ export class TracePeekDrawer extends SceneObjectBase<TracePeekDrawerState> {
       .setOption('enableLogDetails', true)
       .build();
 
-    super({ traceId: '', activeTab: 'waterfall', spanId: '', waterfall, logsPanel });
+    super({ traceId: '', activeTab: 'waterfall', logsFilter, waterfall, logsPanel });
 
     this._traceRunner = traceRunner;
     this._logsRunner = logsRunner;
     waterfall.onSelectSpan = this.onSelectSpan;
+
+    this.addActivationHandler(() => {
+      const sub = logsFilter.subscribeToState((newState, prevState) => {
+        if (
+          !this._resettingFilter &&
+          (newState.spanId !== prevState.spanId || newState.text !== prevState.text)
+        ) {
+          this.applyLogsQuery(this.state.traceId, newState.spanId, newState.text);
+        }
+      });
+      return () => sub.unsubscribe();
+    });
   }
 
   public getUrlState() {
@@ -95,13 +112,9 @@ export class TracePeekDrawer extends SceneObjectBase<TracePeekDrawerState> {
   };
 
   public onSelectSpan = (spanId: string) => {
-    this.setState({ spanId, activeTab: 'logs' });
-    this.applyLogsQuery(this.state.traceId, spanId);
-  };
-
-  public onClearSpan = () => {
-    this.setState({ spanId: '' });
-    this.applyLogsQuery(this.state.traceId, '');
+    this.setState({ activeTab: 'logs' });
+    // The filter subscription re-runs the logs query.
+    this.state.logsFilter.onChangeSpan(spanId);
   };
 
   public refreshDatasource() {
@@ -114,19 +127,29 @@ export class TracePeekDrawer extends SceneObjectBase<TracePeekDrawerState> {
   }
 
   private setTraceId(traceId: string) {
-    this.setState({ traceId, spanId: '', activeTab: 'waterfall' });
+    const prevTraceId = this.state.traceId;
+    this.setState({ traceId, activeTab: 'waterfall' });
+    if (prevTraceId && traceId !== prevTraceId) {
+      // Closing or switching traces invalidates the log filters. On the initial
+      // deep-linked open (prevTraceId empty) the filters may already hold
+      // URL-restored values, so leave them alone.
+      this._resettingFilter = true;
+      this.state.logsFilter.clear();
+      this._resettingFilter = false;
+    }
     if (traceId) {
       // Always re-run: the runners keep the previous trace's data while the
       // drawer is closed (panels unmounted), and scenes would otherwise show
       // that stale result when the drawer re-opens for a different trace.
       this._traceRunner.setState({ queries: [traceLookupQuery(traceId)] });
       this._traceRunner.runQueries();
-      this.applyLogsQuery(traceId, '');
+      const { spanId, text } = this.state.logsFilter.state;
+      this.applyLogsQuery(traceId, spanId, text);
     }
   }
 
-  private applyLogsQuery(traceId: string, spanId: string) {
-    this._logsRunner.setState({ queries: [traceLogsQuery(traceId, spanId)] });
+  private applyLogsQuery(traceId: string, spanId: string, text: string) {
+    this._logsRunner.setState({ queries: [traceLogsQuery(traceId, spanId, text)] });
     if (traceId) {
       this._logsRunner.runQueries();
     }
@@ -134,7 +157,7 @@ export class TracePeekDrawer extends SceneObjectBase<TracePeekDrawerState> {
 }
 
 function TracePeekDrawerRenderer({ model }: SceneComponentProps<TracePeekDrawer>) {
-  const { traceId, activeTab, spanId, waterfall, logsPanel } = model.useState();
+  const { traceId, activeTab, logsFilter, waterfall, logsPanel } = model.useState();
   const styles = useStyles2(getStyles);
 
   if (!traceId) {
@@ -177,16 +200,9 @@ function TracePeekDrawerRenderer({ model }: SceneComponentProps<TracePeekDrawer>
       </div>
       {activeTab === 'logs' && (
         <div className={styles.tabContent}>
-          {spanId && (
-            <div className={styles.filterRow}>
-              <Tag
-                name={`span: ${spanId} ✕`}
-                colorIndex={9}
-                title="Showing logs for this span only — click to clear"
-                onClick={model.onClearSpan}
-              />
-            </div>
-          )}
+          <div className={styles.filterRow}>
+            <LogsFilterControls controller={logsFilter} />
+          </div>
           <div className={styles.panel}>
             <logsPanel.Component model={logsPanel} />
           </div>
