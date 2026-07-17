@@ -3,6 +3,7 @@ package quickwit
 import (
 	"encoding/json"
 	"fmt"
+	neturl "net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -19,7 +20,8 @@ import (
 const (
 	tracesType       = "traces"
 	traceSearchType  = "trace_search"
-	quickwitPluginID = "quickwit-quickwit-datasource"
+	quickwitPluginID    = "quickwit-quickwit-datasource"
+	quickwitAppPluginID = "quickwit-quickwit-app"
 
 	maxTraceStackTraceBytes      = 64 * 1024
 	traceStackTraceTruncatedText = "\n... truncated"
@@ -273,8 +275,32 @@ func processTraceSearchResponse(res *es.SearchResponse, target *Query, dsInfo *e
 		}
 		summaries = append(summaries, summary)
 	}
+
+	// Optional server-side ordering, applied before the limit truncation so
+	// e.g. "slowest" returns the slowest traces of the scanned window rather
+	// than a client-side re-sort of the most recent page.
+	sortKey := ""
+	if len(target.Metrics) > 0 {
+		sortKey = target.Metrics[0].Settings.Get("sort").MustString()
+	}
 	sort.SliceStable(summaries, func(i, j int) bool {
-		return summaries[i].startTimeMillis > summaries[j].startTimeMillis
+		a, b := summaries[i], summaries[j]
+		switch sortKey {
+		case "duration":
+			da, db := a.endTimeMillis-a.startTimeMillis, b.endTimeMillis-b.startTimeMillis
+			if da != db {
+				return da > db
+			}
+		case "errors":
+			if a.errorCount != b.errorCount {
+				return a.errorCount > b.errorCount
+			}
+		case "spans":
+			if a.spanCount != b.spanCount {
+				return a.spanCount > b.spanCount
+			}
+		}
+		return a.startTimeMillis > b.startTimeMillis
 	})
 
 	limit := defaultSize
@@ -975,7 +1001,19 @@ func traceSearchDataLinks(dsInfo *es.DatasourceInfo) []data.DataLink {
 		return nil
 	}
 
-	return traceInternalDataLinks("Open trace", datasourceUID, datasourceName, "trace_id:${__value.raw}", tracesType, "1000")
+	links := traceInternalDataLinks("Open trace", datasourceUID, datasourceName, "trace_id:${__value.raw}", tracesType, "1000")
+	return append(links, tracePeekDataLinks(datasourceUID)...)
+}
+
+// tracePeekDataLinks links into the bundled trace explorer app, which opens
+// the trace in a side drawer (waterfall or logs tab) without leaving the page.
+func tracePeekDataLinks(datasourceUID string) []data.DataLink {
+	base := "/a/" + quickwitAppPluginID + "/explorer?ds=" + neturl.QueryEscape(datasourceUID) +
+		"&${__url_time_range}&peek=${__value.raw}"
+	return []data.DataLink{
+		{Title: "Peek trace", URL: base},
+		{Title: "Peek logs", URL: base + "&peekTab=logs"},
+	}
 }
 
 func traceToLogsDataLinks(dsInfo *es.DatasourceInfo) []data.DataLink {

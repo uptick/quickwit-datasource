@@ -6,8 +6,13 @@ import CodeMirror, { Prec, ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { keymap } from '@codemirror/view';
 import { linter, Diagnostic, lintGutter } from "@codemirror/lint"
 import { autocompletion, CompletionContext, startCompletion } from "@codemirror/autocomplete"
+import { useTheme2 } from '@grafana/ui';
 import { LuceneQuery } from "@/utils/lucene";
 
+export interface Suggestion {
+  from: number;
+  options: Array<{ type: string; label: string; detail?: string }>;
+}
 
 export type LuceneQueryEditorProps = {
   placeholder?: string,
@@ -19,6 +24,7 @@ export type LuceneQueryEditorProps = {
 
 export function LuceneQueryEditor(props: LuceneQueryEditorProps){
   const editorRef = useRef<ReactCodeMirrorRef|null>(null)
+  const theme = useTheme2()
 
   const queryLinter =  linter( view => {
     let diagnostics: Diagnostic[] = [];
@@ -78,7 +84,7 @@ export function LuceneQueryEditor(props: LuceneQueryEditorProps){
     ref={editorRef}
     className={css`height:100%`} // XXX : need to set height for both wrapper elements
     height="100%"
-    theme={'dark'} 
+    theme={theme.isDark ? 'dark' : 'light'}
     placeholder={props.placeholder}
     value={props.value}
     onChange={props.onChange}

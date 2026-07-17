@@ -1,0 +1,22 @@
+apiVersion: 1
+
+datasources:
+  - name: Quickwit Logs
+    uid: quickwit-logs
+    type: quickwit-quickwit-datasource
+    url: http://quickwit:7280/api/v1
+    jsonData:
+      index: 'otel-logs-v0_9'
+      logMessageField: body.message
+      logLevelField: severity_text
+      tracesDatasourceUid: quickwit-traces
+      tracesDatasourceName: Quickwit Traces
+
+  - name: Quickwit Traces
+    uid: quickwit-traces
+    type: quickwit-quickwit-datasource
+    url: http://quickwit:7280/api/v1
+    jsonData:
+      index: 'otel-traces-v0_9'
+      logsDatasourceUid: quickwit-logs
+      logsDatasourceName: Quickwit Logs
