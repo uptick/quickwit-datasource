@@ -123,10 +123,10 @@ function createOrderByOptionsForPercentiles(metric: Percentiles): Array<Selectab
     return [];
   }
   return metric.settings.percents.map((percent) => {
-    // The bucket path for percentile numbers is appended with a `.0` if the number is whole
-    // otherwise you have to use the actual value.
-    const percentString = /^\d+\.\d+/.test(`${percent}`) ? percent : `${percent}.0`;
-    return { label: `${describeMetric(metric)} (${percent})`, value: `${metric.id}[${percentString}]` };
+    // Unlike Elasticsearch, Quickwit's aggregation engine names the percentile
+    // sub-aggregation after the percent value exactly as sent in the request
+    // (e.g. "95"), without appending `.0` for whole numbers.
+    return { label: `${describeMetric(metric)} (${percent})`, value: `${metric.id}[${percent}]` };
   });
 }
 
