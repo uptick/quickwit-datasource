@@ -2,9 +2,9 @@ import { screen } from '@testing-library/react';
 import React from 'react';
 import selectEvent from 'react-select-event';
 
-import { ElasticsearchQuery, Terms, Average, Derivative, TopMetrics } from '@/types';
+import { ElasticsearchQuery, Terms, Average, Derivative, TopMetrics, Percentiles } from '@/types';
 
-import { TermsSettingsEditor } from './TermsSettingsEditor';
+import { TermsSettingsEditor, createOrderByOptions } from './TermsSettingsEditor';
 import { describeMetric } from 'utils';
 import { renderWithESProvider } from 'test-helpers/render';
 
@@ -38,5 +38,19 @@ describe('Terms Settings Editor', () => {
     expect(screen.queryByText(describeMetric(topMetrics))).not.toBeInTheDocument();
     // All other metric aggregations can be used in order by
     expect(await screen.findByText(describeMetric(avg))).toBeInTheDocument();
+  });
+
+  it('Order by option value for a whole-number percentile should not append ".0"', () => {
+    // Quickwit's aggregation engine names the percentile sub-aggregation after the
+    // percent value exactly as sent in the request (e.g. "95"), unlike Elasticsearch
+    // which requires a ".0" suffix for whole-number bucket paths (e.g. "95.0").
+    // Sending an orderBy of "1[95.0]" makes Quickwit fail with
+    // "could not find aggregation with name 1[95] in metric sub_aggregations".
+    const percentiles: Percentiles = { id: '1', type: 'percentiles', field: '@value', settings: { percents: ['95'] } };
+
+    const options = createOrderByOptions([percentiles]);
+
+    expect(options.some((option) => option.value === '1[95]')).toBe(true);
+    expect(options.some((option) => option.value === '1[95.0]')).toBe(false);
   });
 });
