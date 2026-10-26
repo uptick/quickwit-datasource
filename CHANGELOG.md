@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.0](https://github.com/uptick/quickwit-datasource/compare/v0.7.0...v0.7.0) (2026-10-26)
+
+
+### Bug Fixes
+
+* **ci:** pin Node to 22.23.4 ([31f5fd6](https://github.com/uptick/quickwit-datasource/commit/31f5fd697c0946f3090b344c30ec3e42e7ee2316))
+* **ci:** pin Node to 22.23.4 ([15fe0c0](https://github.com/uptick/quickwit-datasource/commit/15fe0c05bda07f34a70e841b680c9ae7d0e1c6ef))
+
 ## [0.7.0](https://github.com/uptick/quickwit-datasource/compare/v0.6.5...v0.7.0) (2026-07-17)
 
 
